@@ -1,0 +1,70 @@
+from numpy import ndarray, zeros
+from pedinf.models import exspline
+from apf_tools.parameters import exspline_parameter_samples
+import pyuda
+
+
+
+def exspline_profile_samples(
+    shot: int,
+    radius: ndarray,
+    uda_client: pyuda.Client,
+    gradients=False,
+    time_range: tuple[float, float] = None,
+) -> dict[str, ndarray]:
+
+    assert radius.ndim == 1
+    n_radii = radius.size
+    n_samples = uda_client.get(f"/apf/core/exspline/lfs/posterior_samples", shot).data
+    time = uda_client.get(f"/apf/core/exspline/lfs/time", shot).data
+    te_samples = exspline_parameter_samples(
+        shot=shot, field_name="t_e", uda_client=uda_client
+    )
+    ne_samples = exspline_parameter_samples(
+        shot=shot, field_name="n_e", uda_client=uda_client
+    )
+
+    if time_range is not None:
+        assert len(time_range) == 2
+        t_min, t_max = time_range
+        assert t_min < t_max
+
+        in_window = (time >= t_min) & (time <= t_max)
+        if not in_window.any():
+            raise ValueError("No data available inside the given time-window")
+
+        t_inds = in_window.nonzero()
+        te_samples = te_samples[t_inds, :, :]
+        ne_samples = ne_samples[t_inds, :, :]
+        time = time[t_inds]
+
+    basis_radius = uda_client.get(
+        f"/apf/core/exspline/lfs/basis_function_radius", shot
+    ).data
+
+    n_times = time.size
+
+    model = exspline(knots=basis_radius, radius=radius)
+    te = zeros([n_times, n_radii, n_samples])
+    ne = zeros([n_times, n_radii, n_samples])
+
+    for t in range(n_times):
+        for s in range(n_samples):
+            te[t, :, s] = model.forward_prediction(te_samples[t, s, :])
+            ne[t, :, s] = model.forward_prediction(ne_samples[t, s, :])
+
+    results = {"time": time, "temperature_profiles": te, "density_profiles": ne}
+
+    if gradients:
+        te_grad = zeros([n_times, n_radii, n_samples])
+        ne_grad = zeros([n_times, n_radii, n_samples])
+
+        for t in range(n_times):
+            for s in range(n_samples):
+                te_grad[t, :, s] = model.forward_gradient(te_samples[t, s, :])
+                ne_grad[t, :, s] = model.forward_gradient(ne_samples[t, s, :])
+
+        results["temperature_gradient_profiles"] = te_grad
+        results["density_gradient_profiles"] = ne_grad
+
+    return results

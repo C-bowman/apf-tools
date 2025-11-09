@@ -1,5 +1,4 @@
 from numpy import concatenate, ndarray
-from pedinf.models import exspline
 import pyuda
 
 
@@ -38,7 +37,7 @@ def exspline_parameter_samples(
     basis_weight_samples = uda_client.get(group + "basis_weights_samples", shot).data
 
     # concatenate the parameters in the correct order to be passed to the exspline model
-    exspline_parameter_samples = concatenate(
+    return concatenate(
         [
             log_loc_samples[:, :, None],
             log_floor_samples[:, :, None],
@@ -47,4 +46,4 @@ def exspline_parameter_samples(
         ],
         axis=2,
     )
-    return exspline_parameter_samples
+

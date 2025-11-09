@@ -4,18 +4,17 @@ from apf_tools.parameters import exspline_parameter_samples
 import pyuda
 
 
-
 def exspline_profile_samples(
     shot: int,
     radius: ndarray,
     uda_client: pyuda.Client,
-    gradients=False,
+    gradients: bool = False,
     time_range: tuple[float, float] = None,
 ) -> dict[str, ndarray]:
 
     assert radius.ndim == 1
     n_radii = radius.size
-    n_samples = uda_client.get(f"/apf/core/exspline/lfs/posterior_samples", shot).data
+    n_samples = uda_client.get(f"/apf/core/exspline/lfs/posterior_samples", shot).data.size
     time = uda_client.get(f"/apf/core/exspline/lfs/time", shot).data
     te_samples = exspline_parameter_samples(
         shot=shot, field_name="t_e", uda_client=uda_client
@@ -33,7 +32,7 @@ def exspline_profile_samples(
         if not in_window.any():
             raise ValueError("No data available inside the given time-window")
 
-        t_inds = in_window.nonzero()
+        t_inds = in_window.nonzero()[0]
         te_samples = te_samples[t_inds, :, :]
         ne_samples = ne_samples[t_inds, :, :]
         time = time[t_inds]

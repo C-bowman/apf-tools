@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=80.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["apf_tools"]
+
+[project]
+name = "apf-tools"
+version = "0.1.0"
+authors = [
+  { name="Chris Bowman", email="chris.bowman.physics@gmail.com" },
+]
+description = "Python tools for accessing and analysing results of the 'APF' Bayesian Thomson-scattering analysis code on MAST-U"
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+requires-python = ">=3.9"
+dependencies = [
+    "numpy >= 1.26.4",
+    "scipy >= 1.12",
+    "inference-tools >= 0.14.2",
+    "pedestal-inference >= 0.5.0"
+]
+
+[project.urls]
+homepage = "https://github.com/C-bowman/apf-tools"
